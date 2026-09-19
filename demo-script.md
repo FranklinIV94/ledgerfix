@@ -7,7 +7,7 @@
 ## Pre-flight (do this 5 minutes before you go on)
 
 1. Open https://ledgerfix.prospyr305.com in a tab and load it once — this wakes the free Render instance (30–50 s cold start). Reload; it should be instant.
-2. Paste the working ElevenLabs `sk_` key into the API-key field (masked, held in memory only). Do not commit it anywhere.
+2. Open **Settings** (the gear button, top right) and paste the working ElevenLabs `sk_` key. It is masked, held in memory for this tab only, and never saved — no browser storage, nothing on the server. Do not commit it anywhere. **Close Settings before you present** — the audience should never see the panel.
 3. Click **Load sample ledger → Run Reconciliation → Play Findings** once, off-stage. If audio plays: you are live. If it fails: use the **Play pre-recorded** fallback (`/audio/ledgerfix-findings-franklin.mp3`, 38 s, your cloned voice, eleven_v3).
 4. Laptop: plugged in, sleep off, screen lock off, volume up, Discord/Mel notifications muted.
 5. Reset the page (reload) so the stage run starts clean.
@@ -38,5 +38,7 @@
 | --- | --- |
 | Page hangs on first load | Cold start — wait 30–50 s, or switch to the onrender.com URL. Pre-flight step 1 prevents this. |
 | Play Findings errors or stalls | Click **Play pre-recorded** (the 38 s fallback MP3). Same words, same voice. |
+| "Add your ElevenLabs API key in Settings" | The panel opens itself — paste the key there, or just click **Play pre-recorded** and keep talking. |
+| Key field missing on the main screen | That is intentional. The key lives behind **Settings** so the demo screen stays clean. |
 | Sample won't load | Drag `sample-ledger.csv` from the repo folder onto the drop zone. |
 | Nothing works | Play the fallback MP3 from the laptop directly and walk through the numbers above from memory. |
