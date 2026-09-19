@@ -7,10 +7,10 @@
 ## Pre-flight (do this 5 minutes before you go on)
 
 1. Open https://ledgerfix.prospyr305.com in a tab and load it once — this wakes the free Render instance (30–50 s cold start). Reload; it should be instant.
-2. Open **Settings** (the gear button, top right) and paste the working ElevenLabs `sk_` key. It is masked, held in memory for this tab only, and never saved — no browser storage, nothing on the server. Do not commit it anywhere. **Close Settings before you present** — the audience should never see the panel.
-3. Click **Load sample ledger → Run Reconciliation → Play Findings** once, off-stage. If audio plays: you are live. If it fails: use the **Play pre-recorded** fallback (`/audio/ledgerfix-findings-franklin.mp3`, 38 s, your cloned voice, eleven_v3).
-4. Laptop: plugged in, sleep off, screen lock off, volume up, Discord/Mel notifications muted.
-5. Reset the page (reload) so the stage run starts clean.
+2. **Reload once more to reset the page** so the stage run starts clean. Do this *before* the next step — the key is held in memory only, so any reload wipes it and you would walk on stage with an empty key field.
+3. Open **Settings** (the gear button, top right) and paste the working ElevenLabs `sk_` key. It is masked, held in memory for this tab only, and never saved — no browser storage, nothing on the server. Do not commit it anywhere, and **do not reload after this step**. Close Settings before you present — the audience should never see the panel.
+4. Click **Load sample ledger → Run Reconciliation → Play Findings** once, off-stage. If audio plays: you are live. If it fails: use the **Play pre-recorded** fallback (`/audio/ledgerfix-findings-franklin.mp3`, 38 s, your cloned voice, eleven_v3).
+5. Laptop: plugged in, sleep off, screen lock off, volume up, Discord/Mel notifications muted. From here on, do not hit refresh — it clears the key.
 
 ## Talk track (~3:00, then let the voice play in full)
 
@@ -40,5 +40,6 @@
 | Play Findings errors or stalls | Click **Play pre-recorded** (the 38 s fallback MP3). Same words, same voice. |
 | "Add your ElevenLabs API key in Settings" | The panel opens itself — paste the key there, or just click **Play pre-recorded** and keep talking. |
 | Key field missing on the main screen | That is intentional. The key lives behind **Settings** so the demo screen stays clean. |
+| Play Findings says no key after a refresh | The key is memory-only, so reloading cleared it. Re-open **Settings**, paste it again, and carry on — or use **Play pre-recorded**. |
 | Sample won't load | Drag `sample-ledger.csv` from the repo folder onto the drop zone. |
 | Nothing works | Play the fallback MP3 from the laptop directly and walk through the numbers above from memory. |

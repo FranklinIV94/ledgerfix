@@ -276,9 +276,9 @@
   // ── API key (session only, show/hide) ────────────────────────────
   function describeKey(key) {
     if (!key) return '';
-    // Enough to recognise which key is loaded without echoing the whole secret.
-    const tail = key.slice(-4);
-    return `Key loaded ····${tail} — memory only, clears when this tab closes`;
+    // Says nothing about the key itself. This line sits beside the voice controls on
+    // the demo screen, so even a partial echo is a needless disclosure.
+    return 'Key loaded — memory only, clears when this tab closes';
   }
 
   function syncKeyStatus() {
