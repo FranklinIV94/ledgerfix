@@ -46,8 +46,11 @@
         <!-- API Key config -->
         <div class="api-config">
           <label for="api-key-input">ElevenLabs API Key</label>
-          <input type="password" id="api-key-input" placeholder="sk_..." autocomplete="off" />
-          <p class="api-hint">Required for voice narration</p>
+          <div class="key-row">
+            <input type="password" id="api-key-input" placeholder="sk_..." autocomplete="off" spellcheck="false" />
+            <button id="key-toggle" class="key-toggle" type="button" aria-label="Show API key" aria-pressed="false">Show</button>
+          </div>
+          <p class="api-hint">Required for voice narration · held in memory for this session only</p>
         </div>
 
         <div id="file-preview" class="file-preview hidden">
@@ -65,6 +68,9 @@
           Run Reconciliation
         </button>
       </div>
+
+      <!-- Error banner -->
+      <div id="error-banner" class="error-banner hidden" role="alert"></div>
 
       <!-- Loading state -->
       <div id="loading" class="hidden">
@@ -119,6 +125,10 @@
         </div>
       </section>
     </main>
+
+    <footer class="site-footer">
+      LedgerFix — Mel Miami AI Hackathon 2026 — deterministic rules, no LLM arithmetic
+    </footer>
   </div>
 
   <script src="app.js"></script>
