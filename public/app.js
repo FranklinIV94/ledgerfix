@@ -312,7 +312,7 @@
   // Live synthesis can fail (bad key, rate limit, network) or simply take too long for
   // a live demo. Past this budget we stop waiting and steer the presenter to the
   // pre-recorded narration instead.
-  const NARRATION_BUDGET_MS = 12000;
+  const NARRATION_BUDGET_MS = 90000; // eleven_v3 needs 20-40s for a 38s narration
 
   playBtn.addEventListener('click', playNarration);
   fallbackBtn.addEventListener('click', () => playFallback('pre-recorded narration'));
