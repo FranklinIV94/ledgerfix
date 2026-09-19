@@ -24,6 +24,7 @@
   const keyStatus     = $('key-status');
   const settingsBtn   = $('settings-btn');
   const settingsPanel = $('settings-panel');
+  const settingsScrim = $('settings-scrim');
   const settingsClose = $('settings-close');
   const filePreview   = $('file-preview');
   const fileName      = $('file-name');
@@ -254,12 +255,15 @@
     results.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  // ── Settings panel ───────────────────────────────────────────────
+  // ── Settings drawer ──────────────────────────────────────────────
   // The key lives in the closure variable above — never in storage — so it is gone
-  // the moment the tab closes. The panel is just where you type it.
+  // the moment the tab closes. The drawer is just where you type it.
   function setSettingsOpen(open) {
     settingsPanel.classList.toggle('hidden', !open);
+    settingsScrim.classList.toggle('hidden', !open);
     settingsBtn.setAttribute('aria-expanded', String(open));
+    // Stops the page behind the scrim from scrolling under the drawer.
+    document.body.classList.toggle('drawer-open', open);
     if (open) apiKeyInput.focus();
   }
 
@@ -268,6 +272,7 @@
   });
 
   settingsClose.addEventListener('click', () => setSettingsOpen(false));
+  settingsScrim.addEventListener('click', () => setSettingsOpen(false));
 
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') setSettingsOpen(false);

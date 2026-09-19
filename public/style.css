@@ -574,10 +574,263 @@ h2 {
 /* ── Utilities ── */
 .hidden { display: none !important; }
 
+/* ══════════════════════════════════════════════════════════════════
+   Elevation — editorial pass: drawer, hero, typography.
+   Overrides only; the base tokens above are untouched. Sits before the
+   responsive block so the narrow-screen rules below still win.
+   ══════════════════════════════════════════════════════════════════ */
+
+:root {
+  --display: 'Fraunces', 'Iowan Old Style', Georgia, serif;
+  --hairline: rgba(255, 255, 255, 0.045);
+  --lift: 0 1px 0 rgba(255, 255, 255, 0.035) inset, 0 18px 40px -24px rgba(0, 0, 0, 0.9);
+  --scrim: rgba(4, 6, 10, 0.74);
+}
+
+/* A soft top glow keeps the canvas from reading as flat black. */
+body {
+  background:
+    radial-gradient(1100px 520px at 18% -8%, rgba(34, 197, 94, 0.055), transparent 60%),
+    radial-gradient(900px 460px at 100% 0%, rgba(59, 130, 246, 0.05), transparent 55%),
+    var(--bg);
+}
+
+body.drawer-open { overflow: hidden; }
+
+#app { max-width: 980px; }
+
+/* ── Header + brand lockup ── */
+header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  padding: 18px 0 16px;
+  border-bottom: 1px solid var(--hairline);
+  background: linear-gradient(180deg, rgba(11, 14, 20, 0.94), rgba(11, 14, 20, 0.72));
+  backdrop-filter: blur(14px);
+}
+
+.logo-lockup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.logo-text {
+  font-family: var(--display);
+  font-size: 23px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.logo-tagline {
+  font-family: var(--sans);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ── Depth: an inset highlight instead of a flat hairline ── */
+.card,
+.stat-card,
+.exception-card,
+.voice-section {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.028), rgba(255, 255, 255, 0) 42%);
+  box-shadow: var(--lift);
+}
+
+/* ── Section overlines ── */
+.results-head { margin: 26px 0 14px; }
+.results-head.findings-head { margin-top: 30px; }
+
+.results-overline {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.results-overline::after {
+  content: '';
+  width: 54px;
+  height: 1px;
+  background: linear-gradient(90deg, var(--green-dim), transparent);
+}
+
+/* ── Hero — Recoverable is the focal point ── */
+.stats-row {
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.stat-hero {
+  grid-column: 1 / -1;
+  text-align: left;
+  padding: 30px 34px 32px;
+  border-color: var(--green-dim);
+  background-image:
+    radial-gradient(560px 200px at 0% 0%, rgba(34, 197, 94, 0.14), transparent 70%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0) 46%);
+}
+
+.stat-hero .stat-label { margin-bottom: 14px; }
+
+.stat-hero .stat-value {
+  font-family: var(--display);
+  font-size: 66px;
+  font-weight: 600;
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+  color: var(--green);
+}
+
+.stats-row .stat-card:not(.stat-hero) .stat-value {
+  font-family: var(--mono);
+  font-size: 26px;
+}
+
+/* ── Exception cards: severity rail + calmer rhythm ── */
+.exception-card {
+  position: relative;
+  padding-left: 24px;
+  gap: 20px;
+}
+.exception-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 14px;
+  bottom: 14px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--border);
+}
+.exception-card:has(.severity-CRITICAL)::before { background: var(--red); }
+.exception-card:has(.severity-HIGH)::before { background: var(--amber); }
+.exception-card:has(.severity-MEDIUM)::before { background: var(--blue); }
+
+.exception-finding { font-size: 14.5px; line-height: 1.6; }
+.exception-amount { font-size: 23px; letter-spacing: -0.01em; }
+
+/* ── Critical banner should stop the eye ── */
+.alert-critical {
+  padding: 20px 24px;
+  background: linear-gradient(180deg, rgba(239, 68, 68, 0.13), rgba(239, 68, 68, 0.05));
+  box-shadow: 0 18px 40px -28px rgba(239, 68, 68, 0.55);
+}
+#critical-text { font-size: 14.5px; line-height: 1.65; }
+
+/* ── Display face for headings ── */
+h2 {
+  font-family: var(--display);
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.drop-zone h2 { font-size: 21px; }
+
+.btn-primary { box-shadow: 0 14px 32px -18px rgba(34, 197, 94, 0.7); }
+
+/* ── Settings drawer + scrim ── */
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: var(--scrim);
+  backdrop-filter: blur(3px);
+}
+.scrim.hidden { display: none; }
+
+.settings-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 50;
+  width: 340px;
+  max-width: 92vw;
+  height: 100vh;
+  overflow-y: auto;
+  padding: 26px 26px 40px;
+  border: none;
+  border-left: 1px solid var(--border);
+  border-radius: 0;
+  background: var(--surface);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0) 30%);
+  box-shadow: -30px 0 70px -30px rgba(0, 0, 0, 0.95);
+}
+.settings-panel.hidden { display: none; }
+
+.settings-head {
+  padding-bottom: 16px;
+  margin-bottom: 22px;
+  border-bottom: 1px solid var(--border);
+}
+.settings-title { font-size: 20px; }
+
+.settings-group { margin-bottom: 26px; }
+
+.settings-overline {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+/* Locked model and voice — shown for confidence, not offered as a choice. */
+.voice-lock {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.02);
+}
+.lock-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 5px 0;
+  font-size: 12px;
+}
+.lock-key {
+  font-family: var(--sans);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.lock-val { font-family: var(--mono); color: var(--text); }
+.lock-note {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.settings-panel .settings-note {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+
 /* ── Responsive ── */
 @media (max-width: 600px) {
   .stats-row { grid-template-columns: 1fr; }
-  .exception-card { grid-template-columns: 1fr; }
+  .stat-hero { padding: 24px 22px 26px; }
+  .stat-hero .stat-value { font-size: 46px; }
+  .settings-panel { width: 100vw; max-width: 100vw; }
+  .exception-card { grid-template-columns: 1fr; padding-left: 18px; }
   .exception-amount { text-align: left; }
   .voice-section { flex-direction: column; align-items: flex-start; }
 }
