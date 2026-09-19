@@ -115,10 +115,20 @@ the UI can tell the difference between "your key is wrong" and "the network is d
 
 ## Voice narration and the API key
 
-**The ElevenLabs API key is supplied by the client at runtime** — the user types it into
-the UI, and the browser sends it with the `/api/narrate` request. It is never stored on the
-server, never written to disk, and not read from an environment variable. Nothing about the
-deployment depends on a server-side key.
+**The ElevenLabs API key is supplied by the client at runtime** — the user pastes it into
+the **Settings** panel (the gear button in the header), and the browser sends it with the
+`/api/narrate` request. It is never stored on the server, never written to disk, and not
+read from an environment variable. Nothing about the deployment depends on a server-side key.
+
+The key is held **in a single in-memory variable for the session only**. It is deliberately
+not written to `localStorage`, `sessionStorage`, or a cookie, so closing the tab clears it —
+there is nothing left on the machine afterwards. `verify-ledgerfix.js` asserts that no web
+storage API is referenced in executable code.
+
+Settings is collapsed by default so the demo screen stays clean: the audience sees the drop
+zone, the results, and the voice controls, not a credential field. If narration is attempted
+with no key, the panel opens automatically and the UI falls back to the pre-recorded audio
+rather than failing silently.
 
 The narration layer converts every figure to plain English words before it reaches the TTS
 engine (`$18,400` → "eighteen thousand four hundred dollars"), and strips raw symbols and

@@ -21,8 +21,37 @@
         </svg>
         <span class="logo-text">LedgerFix</span>
       </div>
-      <div class="header-badge">Agentic Finance</div>
+      <div class="header-actions">
+        <div class="header-badge">Agentic Finance</div>
+        <button id="settings-btn" class="settings-btn" type="button" aria-label="Settings" aria-expanded="false" aria-controls="settings-panel">
+          <svg width="13" height="13" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <circle cx="10" cy="10" r="3" stroke="currentColor" stroke-width="1.7"/>
+            <path d="M10 1.6v2.6M10 15.8v2.6M18.4 10h-2.6M4.2 10H1.6M15.9 4.1l-1.8 1.8M5.9 14.1l-1.8 1.8M15.9 15.9l-1.8-1.8M5.9 5.9L4.1 4.1" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+          </svg>
+          Settings
+        </button>
+      </div>
     </header>
+
+    <!-- Settings — kept out of the main flow so the demo screen stays clean -->
+    <section id="settings-panel" class="card settings-panel hidden" aria-label="Settings">
+      <div class="settings-head">
+        <h2>Settings</h2>
+        <button id="settings-close" class="btn-ghost" type="button" aria-label="Close settings">&times;</button>
+      </div>
+      <div class="api-config">
+        <label for="api-key-input">ElevenLabs API Key</label>
+        <div class="key-row">
+          <input type="password" id="api-key-input" placeholder="sk_..." autocomplete="off" spellcheck="false" />
+          <button id="key-toggle" class="key-toggle" type="button" aria-label="Show API key" aria-pressed="false">Show</button>
+        </div>
+        <p class="api-hint">Used only for voice narration on this device.</p>
+      </div>
+      <p class="settings-note">
+        The key is held in memory for this session only. Closing the tab clears it —
+        nothing is written to this browser's storage, and the key is never saved on the server.
+      </p>
+    </section>
 
     <!-- Main content -->
     <main>
@@ -41,16 +70,6 @@
           <input type="file" id="file-input" accept=".csv" hidden />
           <button id="browse-btn" class="btn-secondary">Browse files</button>
           <button id="sample-btn" class="btn-secondary">Load sample ledger</button>
-        </div>
-
-        <!-- API Key config -->
-        <div class="api-config">
-          <label for="api-key-input">ElevenLabs API Key</label>
-          <div class="key-row">
-            <input type="password" id="api-key-input" placeholder="sk_..." autocomplete="off" spellcheck="false" />
-            <button id="key-toggle" class="key-toggle" type="button" aria-label="Show API key" aria-pressed="false">Show</button>
-          </div>
-          <p class="api-hint">Required for voice narration · held in memory for this session only</p>
         </div>
 
         <div id="file-preview" class="file-preview hidden">
@@ -114,6 +133,7 @@
             </svg>
             <span>Voice narration — Franklin's cloned voice</span>
           </div>
+          <div id="key-status" class="key-status"></div>
           <button id="play-btn" class="btn-voice">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
               <path d="M6 4l10 6-10 6V4z" fill="currentColor"/>

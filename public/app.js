@@ -21,6 +21,10 @@
   const sampleBtn     = $('sample-btn');
   const apiKeyInput   = $('api-key-input');
   const keyToggle     = $('key-toggle');
+  const keyStatus     = $('key-status');
+  const settingsBtn   = $('settings-btn');
+  const settingsPanel = $('settings-panel');
+  const settingsClose = $('settings-close');
   const filePreview   = $('file-preview');
   const fileName      = $('file-name');
   const clearBtn      = $('clear-btn');
@@ -250,9 +254,42 @@
     results.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
+  // ── Settings panel ───────────────────────────────────────────────
+  // The key lives in the closure variable above — never in storage — so it is gone
+  // the moment the tab closes. The panel is just where you type it.
+  function setSettingsOpen(open) {
+    settingsPanel.classList.toggle('hidden', !open);
+    settingsBtn.setAttribute('aria-expanded', String(open));
+    if (open) apiKeyInput.focus();
+  }
+
+  settingsBtn.addEventListener('click', () => {
+    setSettingsOpen(settingsPanel.classList.contains('hidden'));
+  });
+
+  settingsClose.addEventListener('click', () => setSettingsOpen(false));
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') setSettingsOpen(false);
+  });
+
   // ── API key (session only, show/hide) ────────────────────────────
+  function describeKey(key) {
+    if (!key) return '';
+    // Enough to recognise which key is loaded without echoing the whole secret.
+    const tail = key.slice(-4);
+    return `Key loaded ····${tail} — memory only, clears when this tab closes`;
+  }
+
+  function syncKeyStatus() {
+    const text = describeKey(sessionApiKey);
+    keyStatus.textContent = text;
+    keyStatus.classList.toggle('loaded', !!text);
+  }
+
   apiKeyInput.addEventListener('input', () => {
     sessionApiKey = apiKeyInput.value.trim();
+    syncKeyStatus();
   });
 
   keyToggle.addEventListener('click', () => {
@@ -263,6 +300,8 @@
     keyToggle.setAttribute('aria-label', revealed ? 'Show API key' : 'Hide API key');
     apiKeyInput.focus();
   });
+
+  syncKeyStatus();
 
   // ── Voice narration ──────────────────────────────────────────────
   // Live synthesis can fail (bad key, rate limit, network) or simply take too long for
@@ -314,8 +353,11 @@
 
     const apiKey = sessionApiKey || apiKeyInput.value.trim();
     if (!apiKey) {
-      showError('Enter your ElevenLabs API key above to enable voice narration.');
-      showFallbackNotice('No API key — use Play pre-recorded for the narration.');
+      // Open Settings so the field is one click away rather than hidden behind a
+      // button the user has not noticed.
+      setSettingsOpen(true);
+      showError('Add your ElevenLabs API key in Settings to enable voice narration.');
+      showFallbackNotice('No API key — Settings is open, or use Play pre-recorded.');
       return;
     }
 
