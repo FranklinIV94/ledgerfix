@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LedgerFix — Reconciliation Copilot</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <header>
+      <div class="logo">
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="28" height="28" rx="6" fill="#0b3d2e"/>
+          <path d="M7 14h14M14 7v14" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="14" cy="14" r="3" fill="#22c55e"/>
+        </svg>
+        <span class="logo-text">LedgerFix</span>
+      </div>
+      <div class="header-badge">Agentic Finance</div>
+    </header>
+
+    <!-- Main content -->
+    <main>
+      <!-- Drop zone -->
+      <section id="drop-section" class="card">
+        <div id="drop-zone" class="drop-zone">
+          <div class="drop-icon">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+              <rect x="8" y="6" width="32" height="36" rx="3" stroke="#22c55e" stroke-width="2"/>
+              <path d="M16 18h16M16 24h16M16 30h10" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+              <path d="M24 38v-8M20 34l4-4 4 4" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <h2>Drop your ledger CSV</h2>
+          <p>Drag &amp; drop or click to upload</p>
+          <input type="file" id="file-input" accept=".csv" hidden />
+          <button id="browse-btn" class="btn-secondary">Browse files</button>
+        </div>
+
+        <!-- API Key config -->
+        <div class="api-config">
+          <label for="api-key-input">ElevenLabs API Key</label>
+          <input type="password" id="api-key-input" placeholder="sk_..." autocomplete="off" />
+          <p class="api-hint">Required for voice narration</p>
+        </div>
+
+        <div id="file-preview" class="file-preview hidden">
+          <span id="file-name"></span>
+          <button id="clear-btn" class="btn-ghost">×</button>
+        </div>
+      </section>
+
+      <!-- Run button -->
+      <div id="run-row" class="hidden">
+        <button id="run-btn" class="btn-primary">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path d="M4 2l12 7-12 7V2z" fill="currentColor"/>
+          </svg>
+          Run Reconciliation
+        </button>
+      </div>
+
+      <!-- Loading state -->
+      <div id="loading" class="hidden">
+        <div class="spinner"></div>
+        <p>Scanning claims…</p>
+      </div>
+
+      <!-- Results -->
+      <section id="results" class="hidden">
+        <!-- Stats row -->
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-label">Claims Scanned</div>
+            <div class="stat-value" id="stat-scanned">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Exceptions Found</div>
+            <div class="stat-value" id="stat-exceptions">—</div>
+          </div>
+          <div class="stat-card highlight">
+            <div class="stat-label">Recoverable</div>
+            <div class="stat-value" id="stat-recoverable">—</div>
+          </div>
+        </div>
+
+        <!-- Critical alert -->
+        <div id="critical-banner" class="alert-critical hidden">
+          <div class="alert-badge">CRITICAL</div>
+          <div id="critical-text"></div>
+        </div>
+
+        <!-- Exception list -->
+        <div class="exceptions-list" id="exceptions-list"></div>
+
+        <!-- Voice playback -->
+        <div id="voice-section" class="voice-section">
+          <div class="voice-header">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <circle cx="10" cy="10" r="9" stroke="#22c55e" stroke-width="1.5"/>
+              <path d="M8 7v6l5-3-5-3z" fill="#22c55e"/>
+            </svg>
+            <span>Voice narration — Franklin's cloned voice</span>
+          </div>
+          <button id="play-btn" class="btn-voice">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M6 4l10 6-10 6V4z" fill="currentColor"/>
+            </svg>
+            Play Findings
+          </button>
+          <div id="voice-status" class="voice-status"></div>
+          <audio id="audio-player" hidden></audio>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
