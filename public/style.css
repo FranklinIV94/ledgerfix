@@ -642,6 +642,11 @@ header {
 }
 
 /* ── Section overlines ── */
+/* The header is sticky, so a scrolled-to section lands underneath it. Clearance
+   here is what keeps the hero visible after Run Reconciliation. */
+#results,
+#drop-section { scroll-margin-top: 96px; }
+
 .results-head { margin: 26px 0 14px; }
 .results-head.findings-head { margin-top: 30px; }
 
