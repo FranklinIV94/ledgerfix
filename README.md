@@ -1,5 +1,7 @@
 # LedgerFix
 
+![LedgerFix](public/brand/wordmark-3x2.png)
+
 Agentic reconciliation + billing-compliance copilot for high-liability service firms
 (workers' comp / medical claims / legal billing), where one billing error costs a penalty
 or an audit.
