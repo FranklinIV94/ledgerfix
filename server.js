@@ -10,7 +10,8 @@ const { parseCSV, runReconciliation } = require('./engine');
 const { buildReport } = require('./report');
 const { buildNarrationScript, synthesize } = require('./voice');
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
+const HOST = '0.0.0.0';
 const STATIC_DIR = path.join(__dirname, 'public');
 
 // MIME types
@@ -56,6 +57,22 @@ async function handleRequest(req, res) {
 
   const url = new URL(req.url, `http://localhost:${PORT}`);
   const pathname = url.pathname;
+
+  // ── GET /api/health ─────────────────────────────────────────────────────────
+  // Render's health check hits this path; keep the payload shape stable.
+  if (req.method === 'GET' && pathname === '/api/health') {
+    sendJSON(res, 200, { status: 'ok', service: 'ledgerfix' });
+    return;
+  }
+
+  // ── GET /sample-ledger.csv ──────────────────────────────────────────────────
+  // The canonical sample ledger lives at the repo root (test-engine.js reads it
+  // from there), which is outside STATIC_DIR — so serve it explicitly or the
+  // "Load sample ledger" button 404s.
+  if (req.method === 'GET' && pathname === '/sample-ledger.csv') {
+    sendFile(res, path.join(__dirname, 'sample-ledger.csv'));
+    return;
+  }
 
   // ── POST /api/reconcile ─────────────────────────────────────────────────────
   if (req.method === 'POST' && pathname === '/api/reconcile') {
@@ -174,6 +191,6 @@ async function handleRequest(req, res) {
   res.end('Not found');
 }
 
-http.createServer(handleRequest).listen(PORT, () => {
-  console.log(`LedgerFix running at http://localhost:${PORT}`);
+http.createServer(handleRequest).listen(PORT, HOST, () => {
+  console.log(`LedgerFix listening on ${HOST}:${PORT}`);
 });
