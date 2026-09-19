@@ -12,12 +12,14 @@ function buildReport({ claims, exceptions, sourceLedger }) {
   const deniedExceptions = exceptions.filter(e => e.type === 'DENIED_NO_REBILL');
   const varianceExceptions = exceptions.filter(e => e.type === 'PAID_VARIANCE');
 
-  // Recoverable: duplicates (CRITICAL amount), denied (full billed), variance (overpayments only)
-  const recoverableDuplicate = duplicateExceptions.reduce((s, e) => s + e.amount, 0);
-  const recoverableDenied = deniedExceptions.reduce((s, e) => s + e.amount, 0);
-  const recoverableVariance = varianceExceptions
-    .filter(e => e.amount > 0)
+  // Recoverable: the duplicate's primary line, every denied claim, and the full
+  // size of each variance gap in either direction. Duplicate sibling lines are
+  // excluded — they restate the primary's exposure rather than adding to it.
+  const recoverableDuplicate = duplicateExceptions
+    .filter(e => e.primary === true)
     .reduce((s, e) => s + e.amount, 0);
+  const recoverableDenied = deniedExceptions.reduce((s, e) => s + e.amount, 0);
+  const recoverableVariance = varianceExceptions.reduce((s, e) => s + Math.abs(e.amount), 0);
   const recoverableTotal = recoverableDuplicate + recoverableDenied + recoverableVariance;
 
   const criticalExceptions = exceptions.filter(e => e.severity === 'CRITICAL');
@@ -73,15 +75,24 @@ function buildReport({ claims, exceptions, sourceLedger }) {
       ),
     },
     headline,
-    exceptions: exceptions.map(e => ({
-      severity: e.severity,
-      type: e.type,
-      claim_id: e.claim_id,
-      claimant: e.claimant,
-      finding: e.finding,
-      amount: parseFloat(e.amount.toFixed(2)),
-      next_action: e.next_action,
-    })),
+    exceptions: exceptions.map(e => {
+      const out = {
+        severity: e.severity,
+        type: e.type,
+        primary: e.primary,
+        claim_id: e.claim_id,
+        claimant: e.claimant,
+        finding: e.finding,
+        amount: parseFloat(e.amount.toFixed(2)),
+        next_action: e.next_action,
+      };
+      // Carry the underlying figures so the voice layer can narrate from
+      // numbers rather than parsing formatted text out of `finding`.
+      ['amount_billed', 'amount_paid', 'amount_total_billed', 'amount_total_paid'].forEach(k => {
+        if (e[k] !== undefined) out[k] = parseFloat(Number(e[k]).toFixed(2));
+      });
+      return out;
+    }),
     next_action_queue: nextActions,
   };
 }

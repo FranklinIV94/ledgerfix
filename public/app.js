@@ -15,6 +15,7 @@
   const dropZone      = $('drop-zone');
   const fileInput     = $('file-input');
   const browseBtn     = $('browse-btn');
+  const sampleBtn     = $('sample-btn');
   const apiKeyInput   = $('api-key-input');
   const filePreview   = $('file-preview');
   const fileName      = $('file-name');
@@ -49,7 +50,7 @@
   }
 
   dropZone.addEventListener('click', e => {
-    if (e.target === browseBtn) return;
+    if (e.target === browseBtn || e.target === sampleBtn) return;
     fileInput.click();
   });
 
@@ -221,16 +222,20 @@
     }
   }
 
-  // ── Load sample ledger button ─────────────────────────────────────
-  // (bonus: auto-load the bundled sample ledger)
-  fetch('./sample-ledger.csv')
-    .then(r => r.ok ? r.text() : null)
-    .then(csv => {
-      if (csv) {
-        // Optionally auto-fill the sample CSV
-        // Uncomment next line to auto-load sample on page open:
-        // currentCSV = csv; fileName.textContent = 'sample-ledger.csv'; filePreview.classList.remove('hidden'); runRow.classList.remove('hidden');
-      }
-    })
-    .catch(() => {});
+  // ── Bundled sample ledger ─────────────────────────────────────────
+  sampleBtn.addEventListener('click', async e => {
+    e.stopPropagation();
+    try {
+      const res = await fetch('./sample-ledger.csv');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      currentCSV = await res.text();
+      currentReport = null;
+      fileName.textContent = 'sample-ledger.csv';
+      filePreview.classList.remove('hidden');
+      runRow.classList.remove('hidden');
+      results.classList.add('hidden');
+    } catch (err) {
+      alert(`Could not load the sample ledger: ${err.message}`);
+    }
+  });
 })();

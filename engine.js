@@ -47,30 +47,53 @@ function runReconciliation(claims) {
 
     const totalPaid = group.reduce((sum, c) => sum + c.amount_paid, 0);
     const totalBilled = group.reduce((sum, c) => sum + c.amount_billed, 0);
-    const recoverable = totalPaid - totalBilled;
 
-    if (recoverable > 0) {
-      // The parent claim is the one with the higher billed amount (WC-1051)
-      const [parent, ...children] = group.sort((a, b) => b.amount_billed - a.amount_billed);
+    // The group is a single claim that was billed more than once. The line
+    // carrying the true billed amount is the primary; the rest are duplicate
+    // payments made against it.
+    const [primary, ...siblings] = [...group].sort((a, b) => b.amount_billed - a.amount_billed);
+    const money = n => n.toLocaleString('en-US', { minimumFractionDigits: 2 });
+    const siblingIds = siblings.map(c => c.claim_id).join(', ');
 
-      const exc = {
-        severity: 'CRITICAL',
+    exceptions.push({
+      severity: 'CRITICAL',
+      type: 'DUPLICATE_PAY',
+      primary: true,
+      claim_id: primary.claim_id,
+      claimant: primary.claimant,
+      date_of_service: primary.date_of_service,
+      policy_id: primary.policy_id,
+      amount: primary.amount_billed,
+      amount_total_paid: totalPaid,
+      amount_total_billed: totalBilled,
+      finding: `Duplicate payment: ${primary.claimant} was billed $${money(primary.amount_billed)} on ${primary.claim_id}, and a second line (${siblingIds}) covers the same date of service and policy — $${money(totalPaid)} paid in total against $${money(primary.amount_billed)} owed.`,
+      next_action: `Void ${siblingIds} and reissue a corrected payment for the billed amount of $${money(primary.amount_billed)}.`,
+      lines: group.map(c => c.claim_id),
+    });
+
+    // The duplicate lines are listed so the finding is auditable, but the
+    // recoverable sits with the primary — counting them again would count the
+    // same money twice.
+    siblings.forEach(s => {
+      exceptions.push({
+        severity: 'HIGH',
         type: 'DUPLICATE_PAY',
-        claim_id: `${parent.claim_id} + ${children.map(c => c.claim_id).join(', ')}`,
-        claimant: parent.claimant,
-        date_of_service: parent.date_of_service,
-        policy_id: parent.policy_id,
-        amount: recoverable,
-        amount_total_paid: totalPaid,
-        amount_total_billed: totalBilled,
-        finding: `Duplicate payment detected: claimant ${parent.claimant} billed $${totalBilled.toLocaleString('en-US', {minimumFractionDigits: 2})} across ${group.length} lines, but paid $${totalPaid.toLocaleString('en-US', {minimumFractionDigits: 2})} — overpayment of $${recoverable.toLocaleString('en-US', {minimumFractionDigits: 2})}.`,
-        next_action: 'Void duplicate line and reissue corrected payment for the accurate billed amount.',
-        lines: group.map(c => c.claim_id),
-      };
+        primary: false,
+        claim_id: s.claim_id,
+        claimant: s.claimant,
+        date_of_service: s.date_of_service,
+        policy_id: s.policy_id,
+        amount: s.amount_billed,
+        recoverable: 0,
+        amount_total_paid: s.amount_paid,
+        amount_total_billed: s.amount_billed,
+        finding: `Duplicate line: ${s.claim_id} repeats ${primary.claim_id} for the same claimant, date of service and policy. It is part of that duplicate and adds nothing beyond the $${money(primary.amount_billed)} already counted.`,
+        next_action: `Void ${s.claim_id} as a duplicate of ${primary.claim_id}.`,
+        lines: [s.claim_id],
+      });
+    });
 
-      exceptions.push(exc);
-      group.forEach(c => flaggedClaimIds.add(c.claim_id));
-    }
+    group.forEach(c => flaggedClaimIds.add(c.claim_id));
   });
 
   // ── RULE 2: PAID_VARIANCE ─────────────────────────────────────────────────
@@ -93,6 +116,8 @@ function runReconciliation(claims) {
       date_of_service: c.date_of_service,
       policy_id: c.policy_id,
       amount: variance,
+      amount_billed: c.amount_billed,
+      amount_paid: c.amount_paid,
       finding: variance > 0
         ? `Overpayment: claimant ${c.claimant} billed $${c.amount_billed.toLocaleString('en-US', {minimumFractionDigits: 2})} but paid $${c.amount_paid.toLocaleString('en-US', {minimumFractionDigits: 2})} — overpaid by $${absVar.toLocaleString('en-US', {minimumFractionDigits: 2})}.`
         : `Underpayment: claimant ${c.claimant} billed $${c.amount_billed.toLocaleString('en-US', {minimumFractionDigits: 2})} but paid $${c.amount_paid.toLocaleString('en-US', {minimumFractionDigits: 2})} — underpaid by $${absVar.toLocaleString('en-US', {minimumFractionDigits: 2})}.`,

@@ -36,8 +36,9 @@ function expandDollars(amount) {
 
   const words = numWords(dollars);
   const sign = amount < 0 ? 'negative ' : '';
-  const verb = amount > 0 ? 'overpayment of ' : amount < 0 ? 'underpayment of ' : '';
-  return sign + words + ' dollars' + (verb ? ` — ${verb}` : '');
+  // A bare amount phrase — callers add their own lead-in words, so there is no
+  // trailing fragment left dangling when this lands at the end of a sentence.
+  return sign + words + ' dollars';
 }
 
 /**
@@ -60,9 +61,11 @@ function buildNarrationScript(report) {
     lines.push(`Critical alert. ${crit.length} critical finding${crit.length !== 1 ? 's' : ''} requiring immediate action.`);
     crit.forEach(e => {
       if (e.type === 'DUPLICATE_PAY') {
-        // Find the total paid / billed from the exception
-        lines.push(`Claimant ${e.claimant}. Duplicate payment detected.`);
-        lines.push(`Billed ${expandDollars(e.amount_total_billed || 0)}. Paid ${expandDollars(e.amount_total_paid || 0)}.`);
+        lines.push(`Claimant ${e.claimant}. Duplicate payment detected on claim ${e.claim_id}.`);
+        lines.push(
+          `Billed ${expandDollars(e.amount_billed ?? e.amount)}. ` +
+          `Paid ${expandDollars(e.amount_total_paid ?? e.amount_total_billed ?? e.amount)} in total.`
+        );
         lines.push(`Recoverable amount: ${expandDollars(e.amount)}.`);
       } else {
         lines.push(`${e.finding} Recoverable: ${expandDollars(e.amount)}.`);
@@ -76,20 +79,33 @@ function buildNarrationScript(report) {
     high.forEach(e => {
       if (e.type === 'DENIED_NO_REBILL') {
         lines.push(`Claim ${e.claim_id}, claimant ${e.claimant}. Denied claim not rebilled. Billed amount: ${expandDollars(e.amount)}. Recoverable if denial is appealed.`);
+      } else if (e.type === 'DUPLICATE_PAY' && e.primary === false) {
+        lines.push(`Claim ${e.claim_id}, claimant ${e.claimant}, is a duplicate line. No further recovery beyond the amount already counted.`);
       } else {
         lines.push(`${e.finding} Recoverable: ${expandDollars(e.amount)}.`);
       }
     });
   }
 
-  // Medium / Low
+  // Medium / Low — narrated from the raw figures, never from `finding`, so no
+  // "$" or formatted text reaches the TTS engine.
+  const narrateVariance = e => {
+    const direction = e.amount > 0 ? 'overpaid' : 'underpaid';
+    const billed = e.amount_billed !== undefined ? e.amount_billed : e.amount;
+    const paid = e.amount_paid !== undefined ? e.amount_paid : e.amount;
+    lines.push(
+      `Claim ${e.claim_id}, claimant ${e.claimant}. Billed ${expandDollars(billed)}, paid ${expandDollars(paid)}. ` +
+      `${e.claimant} was ${direction} by ${expandDollars(Math.abs(e.amount))}.`
+    );
+  };
+
   if (medium.length > 0) {
     lines.push(`${medium.length} medium priority variance${medium.length !== 1 ? 's' : ''} detected.`);
-    medium.forEach(e => lines.push(`${e.finding} Recoverable: ${expandDollars(e.amount)}.`));
+    medium.forEach(narrateVariance);
   }
   if (low.length > 0) {
     lines.push(`${low.length} low priority item${low.length !== 1 ? 's' : ''} requiring review.`);
-    low.forEach(e => lines.push(`${e.finding} Recoverable: ${expandDollars(e.amount)}.`));
+    low.forEach(narrateVariance);
   }
 
   // Recoverable breakdown
@@ -147,7 +163,7 @@ async function synthesize(apiKey, text, options = {}) {
     throw new Error(`ElevenLabs API error ${response.status}: ${err}`);
   }
 
-  return response.buffer();
+  return Buffer.from(await response.arrayBuffer());
 }
 
 module.exports = { buildNarrationScript, expandDollars, synthesize };

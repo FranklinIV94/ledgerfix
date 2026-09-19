@@ -1,0 +1,15 @@
+{
+  "name": "ledgerfix",
+  "version": "1.0.0",
+  "description": "Claims reconciliation engine — finds duplicate payments, variances and denied claims, then narrates the findings",
+  "main": "server.js",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node test-engine.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

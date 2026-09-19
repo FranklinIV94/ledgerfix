@@ -157,8 +157,11 @@ async function handleRequest(req, res) {
   if (req.method === 'GET') {
     let filePath = pathname === '/' ? '/index.html' : pathname;
     const fullPath = path.join(STATIC_DIR, filePath);
-    // Security: only serve files under STATIC_DIR
-    if (!fullPath.startsWith(STATIC_DIR)) {
+    // Security: only serve files under STATIC_DIR. Compare with a path
+    // separator so a sibling directory that shares the prefix
+    // (e.g. "public-backup") cannot satisfy the check.
+    const rel = path.relative(STATIC_DIR, fullPath);
+    if (rel.startsWith('..') || path.isAbsolute(rel)) {
       res.writeHead(403);
       res.end('Forbidden');
       return;

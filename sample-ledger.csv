@@ -1,0 +1,15 @@
+claim_id,claimant,date_of_service,amount_billed,amount_paid,policy_id,coverage_remaining,claim_type,adjuster,status,note
+WC-1041,James Whitfield,2026-08-03,4250.00,4250.00,WCP-2026-001,5750.00,workers_comp,Adams,PAID,Clean.
+WC-1042,Lisa Moreno,2026-08-07,6800.00,6800.00,WCP-2026-001,0.00,workers_comp,Adams,PAID,Clean.
+WC-1043,Robert Chen,2026-08-10,9200.00,9200.00,WCP-2026-002,1800.00,workers_comp,Adams,PAID,Clean.
+WC-1044,Nina Patel,2026-08-14,3100.00,3100.00,WCP-2026-001,2650.00,workers_comp,Baker,PAID,Clean.
+WC-1045,Tom Hargrove,2026-08-19,15750.00,15750.00,WCP-2026-003,2250.00,workers_comp,Baker,PAID,Clean.
+WC-1046,Carol Simmons,2026-08-05,4500.00,4220.00,WCP-2026-001,2300.00,workers_comp,Adams,PAID,Underpaid by $280. Monitor.
+WC-1047,Derek Walsh,2026-08-11,7800.00,8100.00,WCP-2026-002,0.00,workers_comp,Adams,PAID,Overpaid by $300. Review.
+WC-1048,Reggie Holt,2026-08-22,2950.00,0.00,WCP-2026-001,4200.00,workers_comp,Baker,DENIED,Denied — no re-bill on record.
+WC-1049,Ashley Coombs,2026-08-25,4100.00,0.00,WCP-2026-003,8100.00,workers_comp,Baker,DENIED,Denied — no re-bill on record.
+WC-1050,Marcus Webb,2026-08-28,5200.00,5200.00,WCP-2026-002,0.00,workers_comp,Adams,PAID,Clean.
+WC-1051,Carmen Delgado,2026-08-06,18400.00,18400.00,WCP-2026-004,6600.00,workers_comp,Adams,PAID,Duplicate — see WC-1052.
+WC-1052,Carmen Delgado,2026-08-06,6100.00,6100.00,WCP-2026-004,500.00,workers_comp,Adams,PAID,Duplicate — sibling to WC-1051. Combined paid = $24,500 on $18,400 billed.
+WC-1053,Pat Okafor,2026-08-30,11200.00,11200.00,WCP-2026-003,0.00,workers_comp,Baker,PAID,Clean.
+WC-1054,Sonya Cruz,2026-08-31,3300.00,3300.00,WCP-2026-001,1400.00,workers_comp,Adams,PAID,Clean.
