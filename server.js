@@ -27,12 +27,18 @@ const MIME = {
   '.mp3': 'audio/mpeg',
 };
 
-function sendJSON(res, status, data) {
-  res.writeHead(status, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
-  res.end(JSON.stringify(data));
+function sendJSON(res, status, data, headOnly) {
+  const body = JSON.stringify(data);
+  res.writeHead(status, {
+    'Content-Type': 'application/json',
+    'Content-Length': Buffer.byteLength(body),
+    'Access-Control-Allow-Origin': '*',
+  });
+  // HEAD must report the same headers as GET but carry no body.
+  res.end(headOnly ? undefined : body);
 }
 
-function sendFile(res, filePath) {
+function sendFile(res, filePath, headOnly) {
   const ext = path.extname(filePath).toLowerCase();
   const mime = MIME[ext] || 'application/octet-stream';
   fs.readFile(filePath, (err, data) => {
@@ -41,8 +47,11 @@ function sendFile(res, filePath) {
       res.end('Not found');
       return;
     }
-    res.writeHead(200, { 'Content-Type': mime });
-    res.end(data);
+    res.writeHead(200, {
+      'Content-Type': mime,
+      'Content-Length': data.length,
+    });
+    res.end(headOnly ? undefined : data);
   });
 }
 
@@ -51,7 +60,7 @@ async function handleRequest(req, res) {
   if (req.method === 'OPTIONS') {
     res.writeHead(204, {
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Methods': 'GET, HEAD, POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
     });
     res.end();
@@ -61,10 +70,14 @@ async function handleRequest(req, res) {
   const url = new URL(req.url, `http://localhost:${PORT}`);
   const pathname = url.pathname;
 
+  // HEAD mirrors GET (RFC 9110) minus the body — probes and uptime monitors use it.
+  const headOnly = req.method === 'HEAD';
+  const isRead = req.method === 'GET' || headOnly;
+
   // ── GET /api/health ─────────────────────────────────────────────────────────
   // Render's health check hits this path; keep the payload shape stable.
-  if (req.method === 'GET' && pathname === '/api/health') {
-    sendJSON(res, 200, { status: 'ok', service: 'ledgerfix' });
+  if (isRead && pathname === '/api/health') {
+    sendJSON(res, 200, { status: 'ok', service: 'ledgerfix' }, headOnly);
     return;
   }
 
@@ -72,15 +85,15 @@ async function handleRequest(req, res) {
   // The canonical sample ledger lives at the repo root (test-engine.js reads it
   // from there), which is outside STATIC_DIR — so serve it explicitly or the
   // "Load sample ledger" button 404s.
-  if (req.method === 'GET' && pathname === '/sample-ledger.csv') {
-    sendFile(res, path.join(__dirname, 'sample-ledger.csv'));
+  if (isRead && pathname === '/sample-ledger.csv') {
+    sendFile(res, path.join(__dirname, 'sample-ledger.csv'), headOnly);
     return;
   }
 
   // ── GET /audio/*.mp3 ────────────────────────────────────────────────────────
   // Pre-recorded narration fallback. Only .mp3 files directly inside public/audio,
   // so a crafted name cannot reach outside the directory.
-  if (req.method === 'GET' && pathname.startsWith('/audio/')) {
+  if (isRead && pathname.startsWith('/audio/')) {
     const name = path.basename(pathname);
     if (!name.toLowerCase().endsWith('.mp3')) {
       res.writeHead(404);
@@ -100,7 +113,7 @@ async function handleRequest(req, res) {
         'Cache-Control': 'public, max-age=3600',
         'Access-Control-Allow-Origin': '*',
       });
-      res.end(data);
+      res.end(headOnly ? undefined : data);
     });
     return;
   }
@@ -223,7 +236,7 @@ async function handleRequest(req, res) {
   }
 
   // ── Static files ───────────────────────────────────────────────────────────
-  if (req.method === 'GET') {
+  if (isRead) {
     let filePath = pathname === '/' ? '/index.html' : pathname;
     const fullPath = path.join(STATIC_DIR, filePath);
     // Security: only serve files under STATIC_DIR. Compare with a path
@@ -235,7 +248,7 @@ async function handleRequest(req, res) {
       res.end('Forbidden');
       return;
     }
-    sendFile(res, fullPath);
+    sendFile(res, fullPath, headOnly);
     return;
   }
 
