@@ -6,6 +6,28 @@
 
 const ELEVENLABS_API_URL = 'https://api.elevenlabs.io/v1/text-to-speech';
 
+// Locked. eleven_v3 is the flagship natural-English model and b49BEbpA9R0tq5wqd5yV is
+// Franklin's cloned voice. Both are constants, deliberately NOT parameters: a caller
+// that passed a different model used to be able to downgrade narration silently, and
+// eleven_multilingual_v2 sounds robotic enough to sink the demo. A failure surfaces
+// as an error instead of quietly switching voices.
+const MODEL_ID = 'eleven_v3';
+const VOICE_ID = 'b49BEbpA9R0tq5wqd5yV';
+const DEFAULT_STABILITY = 0.5;
+const DEFAULT_SIMILARITY_BOOST = 0.8;
+
+/**
+ * Error carrying the upstream HTTP status, so callers can answer with
+ * { error, status } rather than a generic 500.
+ */
+class VoiceError extends Error {
+  constructor(message, status) {
+    super(message);
+    this.name = 'VoiceError';
+    this.status = status || 502;
+  }
+}
+
 // Expand a numeric dollar amount into plain English words.
 // e.g. 18400 → "eighteen thousand four hundred dollars"
 function expandDollars(amount) {
@@ -129,41 +151,70 @@ function buildNarrationScript(report) {
 
 /**
  * Synthesize speech via ElevenLabs API.
+ *
+ * Model and voice are fixed (see MODEL_ID / VOICE_ID). There is no fallback: if the
+ * request fails, a VoiceError is thrown with the upstream status so the caller can
+ * answer with { error, status }.
+ *
  * @param {string} apiKey - ElevenLabs API key
  * @param {string} text - Plain English text to speak
- * @param {object} options - voice settings
+ * @param {object} options - delivery overrides (stability, similarityBoost)
  * @returns {Promise<Buffer>} - MP3 audio buffer
+ * @throws {VoiceError}
  */
 async function synthesize(apiKey, text, options = {}) {
   const {
-    voiceId = 'b49BEbpA9R0tq5wqd5yV',
-    model = 'eleven_v3',
-    stability = 0.5,
-    similarityBoost = 0.8,
+    stability = DEFAULT_STABILITY,
+    similarityBoost = DEFAULT_SIMILARITY_BOOST,
   } = options;
 
-  const response = await fetch(`${ELEVENLABS_API_URL}/${voiceId}`, {
-    method: 'POST',
-    headers: {
-      'xi-api-key': apiKey,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      text,
-      model_id: model,
-      voice_settings: {
-        stability,
-        similarity_boost: similarityBoost,
-      },
-    }),
-  });
+  if (!apiKey) throw new VoiceError('ElevenLabs API key required', 400);
 
-  if (!response.ok) {
-    const err = await response.text();
-    throw new Error(`ElevenLabs API error ${response.status}: ${err}`);
+  let response;
+  try {
+    response = await fetch(`${ELEVENLABS_API_URL}/${VOICE_ID}`, {
+      method: 'POST',
+      headers: {
+        'xi-api-key': apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        text,
+        model_id: MODEL_ID,
+        voice_settings: {
+          stability,
+          similarity_boost: similarityBoost,
+        },
+      }),
+    });
+  } catch (err) {
+    // Network-level failure reaching ElevenLabs.
+    throw new VoiceError(`Could not reach ElevenLabs: ${err.message}`, 502);
   }
 
-  return Buffer.from(await response.arrayBuffer());
+  if (!response.ok) {
+    const detail = await response.text().catch(() => '');
+    // Pass the upstream status through rather than flattening to 500, so a bad key
+    // reads as 401 and a rate limit as 429.
+    throw new VoiceError(
+      `ElevenLabs rejected the request (${response.status}): ${detail.slice(0, 300) || 'no detail'}`,
+      response.status
+    );
+  }
+
+  try {
+    return Buffer.from(await response.arrayBuffer());
+  } catch (err) {
+    throw new VoiceError(`Could not read the audio response: ${err.message}`, 502);
+  }
 }
 
-module.exports = { buildNarrationScript, expandDollars, synthesize };
+module.exports = {
+  buildNarrationScript,
+  expandDollars,
+  synthesize,
+  VoiceError,
+  ELEVENLABS_API_URL,
+  MODEL_ID,
+  VOICE_ID,
+};

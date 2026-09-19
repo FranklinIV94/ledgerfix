@@ -33,6 +33,8 @@
   const criticalBanner= $('critical-banner');
   const criticalText  = $('critical-text');
   const playBtn       = $('play-btn');
+  const fallbackBtn   = $('fallback-btn');
+  const fallbackNotice= $('fallback-notice');
   const voiceStatus   = $('voice-status');
   const audioPlayer   = $('audio-player');
 
@@ -263,7 +265,49 @@
   });
 
   // ── Voice narration ──────────────────────────────────────────────
+  // Live synthesis can fail (bad key, rate limit, network) or simply take too long for
+  // a live demo. Past this budget we stop waiting and steer the presenter to the
+  // pre-recorded narration instead.
+  const NARRATION_BUDGET_MS = 12000;
+
   playBtn.addEventListener('click', playNarration);
+  fallbackBtn.addEventListener('click', () => playFallback('pre-recorded narration'));
+
+  function showFallbackNotice(message) {
+    fallbackNotice.textContent = message;
+    fallbackNotice.classList.remove('hidden');
+    fallbackBtn.classList.add('highlight');
+  }
+
+  function hideFallbackNotice() {
+    fallbackNotice.classList.add('hidden');
+    fallbackBtn.classList.remove('highlight');
+  }
+
+  // Plays the bundled MP3. Used by the button itself and by the failure paths below.
+  async function playFallback(reason) {
+    try {
+      audioPlayer.src = `${apiBase}/audio/ledgerfix-findings-franklin.mp3`;
+      audioPlayer.onended = () => {
+        voiceStatus.textContent = 'Pre-recorded narration complete.';
+        voiceStatus.className = 'voice-status';
+      };
+      audioPlayer.onerror = () => {
+        voiceStatus.textContent = 'Could not play the pre-recorded narration.';
+        voiceStatus.className = 'voice-status';
+      };
+      voiceStatus.textContent = 'Playing pre-recorded narration…';
+      voiceStatus.className = 'voice-status playing';
+      await audioPlayer.play();
+      if (!fallbackNotice.textContent) {
+        fallbackNotice.textContent = `Playing the ${reason}.`;
+        fallbackNotice.classList.remove('hidden');
+      }
+    } catch (err) {
+      voiceStatus.textContent = 'Playback error: ' + err.message;
+      voiceStatus.className = 'voice-status';
+    }
+  }
 
   async function playNarration() {
     if (!currentReport) return;
@@ -271,19 +315,25 @@
     const apiKey = sessionApiKey || apiKeyInput.value.trim();
     if (!apiKey) {
       showError('Enter your ElevenLabs API key above to enable voice narration.');
+      showFallbackNotice('No API key — use Play pre-recorded for the narration.');
       return;
     }
 
     hideError();
+    hideFallbackNotice();
     playBtn.disabled = true;
     voiceStatus.textContent = 'Generating voice…';
     voiceStatus.className = 'voice-status';
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), NARRATION_BUDGET_MS);
 
     try {
       const res = await fetch(`${apiBase}/api/narrate-stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ report: currentReport, apiKey }),
+        signal: controller.signal,
       });
 
       if (!res.ok) {
@@ -314,10 +364,24 @@
       voiceStatus.className = 'voice-status playing';
       await audioPlayer.play();
     } catch (err) {
-      voiceStatus.textContent = 'Error: ' + err.message;
+      // AbortError means we hit the budget, not that synthesis failed.
+      const timedOut = err.name === 'AbortError';
+      const message = timedOut
+        ? `Voice narration took longer than ${NARRATION_BUDGET_MS / 1000} seconds.`
+        : err.message;
+
+      voiceStatus.textContent = 'Error: ' + message;
       voiceStatus.className = 'voice-status';
-      showError(`Voice narration failed: ${err.message}`);
+      showError(`Voice narration failed: ${message}`);
+      // Point the presenter at the fallback rather than leaving them stuck on stage.
+      showFallbackNotice(
+        timedOut
+          ? `Live narration exceeded ${NARRATION_BUDGET_MS / 1000}s — use Play pre-recorded.`
+          : 'Live narration unavailable — use Play pre-recorded.'
+      );
       playBtn.disabled = false;
+    } finally {
+      clearTimeout(timer);
     }
   }
 

@@ -8,11 +8,13 @@ const fs = require('fs');
 const path = require('path');
 const { parseCSV, runReconciliation } = require('./engine');
 const { buildReport } = require('./report');
-const { buildNarrationScript, synthesize } = require('./voice');
+const { buildNarrationScript, synthesize, VoiceError, ELEVENLABS_API_URL, MODEL_ID, VOICE_ID } = require('./voice');
 
 const PORT = process.env.PORT || 3000;
 const HOST = '0.0.0.0';
 const STATIC_DIR = path.join(__dirname, 'public');
+// Pre-generated narration fallback, played when live synthesis is unavailable.
+const AUDIO_DIR = path.join(STATIC_DIR, 'audio');
 
 // MIME types
 const MIME = {
@@ -22,6 +24,7 @@ const MIME = {
   '.json': 'application/json',
   '.svg': 'image/svg+xml',
   '.ico': 'image/x-icon',
+  '.mp3': 'audio/mpeg',
 };
 
 function sendJSON(res, status, data) {
@@ -74,6 +77,34 @@ async function handleRequest(req, res) {
     return;
   }
 
+  // ── GET /audio/*.mp3 ────────────────────────────────────────────────────────
+  // Pre-recorded narration fallback. Only .mp3 files directly inside public/audio,
+  // so a crafted name cannot reach outside the directory.
+  if (req.method === 'GET' && pathname.startsWith('/audio/')) {
+    const name = path.basename(pathname);
+    if (!name.toLowerCase().endsWith('.mp3')) {
+      res.writeHead(404);
+      res.end('Not found');
+      return;
+    }
+    const fullPath = path.join(AUDIO_DIR, name);
+    fs.readFile(fullPath, (err, data) => {
+      if (err) {
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end('Not found');
+        return;
+      }
+      res.writeHead(200, {
+        'Content-Type': 'audio/mpeg',
+        'Content-Length': data.length,
+        'Cache-Control': 'public, max-age=3600',
+        'Access-Control-Allow-Origin': '*',
+      });
+      res.end(data);
+    });
+    return;
+  }
+
   // ── POST /api/reconcile ─────────────────────────────────────────────────────
   if (req.method === 'POST' && pathname === '/api/reconcile') {
     let body = '';
@@ -100,7 +131,7 @@ async function handleRequest(req, res) {
       try {
         const { report, apiKey } = JSON.parse(body);
         if (!apiKey) {
-          sendJSON(res, 400, { success: false, error: 'ElevenLabs API key required' });
+          sendJSON(res, 400, { success: false, error: 'ElevenLabs API key required', status: 400 });
           return;
         }
         const script = buildNarrationScript(report);
@@ -112,14 +143,20 @@ async function handleRequest(req, res) {
         });
         res.end(audioBuffer);
       } catch (err) {
-        sendJSON(res, 500, { success: false, error: err.message });
+        // `status` is the upstream code when the voice layer supplied one.
+        sendJSON(res, err.status || 500, {
+          success: false,
+          error: err.message,
+          status: err.status || 500,
+        });
       }
     });
     return;
   }
 
   // ── POST /api/narrate-stream ────────────────────────────────────────────────
-  // Streams the audio back as it's generated (faster UX)
+  // Streams the audio back as it's generated (faster UX). Model and voice come
+  // from the voice module's locked constants — never a per-request override.
   if (req.method === 'POST' && pathname === '/api/narrate-stream') {
     let body = '';
     req.on('data', chunk => { body += chunk; });
@@ -127,29 +164,41 @@ async function handleRequest(req, res) {
       try {
         const { report, apiKey } = JSON.parse(body);
         if (!apiKey) {
-          res.writeHead(400, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ success: false, error: 'API key required' }));
+          sendJSON(res, 400, { success: false, error: 'ElevenLabs API key required', status: 400 });
           return;
         }
         const script = buildNarrationScript(report);
 
-        const response = await fetch(`${require('./voice').ELEVENLABS_API_URL}/b49BEbpA9R0tq5wqd5yV`, {
-          method: 'POST',
-          headers: {
-            'xi-api-key': apiKey,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            text: script,
-            model_id: 'eleven_v3',
-            voice_settings: { stability: 0.5, similarity_boost: 0.8 },
-          }),
-        });
+        let response;
+        try {
+          response = await fetch(`${ELEVENLABS_API_URL}/${VOICE_ID}`, {
+            method: 'POST',
+            headers: {
+              'xi-api-key': apiKey,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              text: script,
+              model_id: MODEL_ID,
+              voice_settings: { stability: 0.5, similarity_boost: 0.8 },
+            }),
+          });
+        } catch (netErr) {
+          sendJSON(res, 502, {
+            success: false,
+            error: `Could not reach ElevenLabs: ${netErr.message}`,
+            status: 502,
+          });
+          return;
+        }
 
         if (!response.ok) {
-          const err = await response.text();
-          res.writeHead(500, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ success: false, error: `ElevenLabs: ${err}` }));
+          const detail = await response.text().catch(() => '');
+          sendJSON(res, response.status, {
+            success: false,
+            error: `ElevenLabs rejected the request (${response.status}): ${detail.slice(0, 300) || 'no detail'}`,
+            status: response.status,
+          });
           return;
         }
 
@@ -163,8 +212,11 @@ async function handleRequest(req, res) {
         }
         res.end();
       } catch (err) {
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: false, error: err.message }));
+        sendJSON(res, err.status || 500, {
+          success: false,
+          error: err.message,
+          status: err.status || 500,
+        });
       }
     });
     return;

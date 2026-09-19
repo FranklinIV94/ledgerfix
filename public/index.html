@@ -120,7 +120,14 @@
             </svg>
             Play Findings
           </button>
+          <button id="fallback-btn" class="btn-voice btn-fallback" type="button" title="Plays the 38-second pre-recorded narration">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M5 4h4v12H5zM12 4h3v12h-3z" fill="currentColor"/>
+            </svg>
+            Play pre-recorded
+          </button>
           <div id="voice-status" class="voice-status"></div>
+          <div id="fallback-notice" class="fallback-notice hidden" role="status"></div>
           <audio id="audio-player" hidden></audio>
         </div>
       </section>
